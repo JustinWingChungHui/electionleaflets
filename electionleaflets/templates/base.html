@@ -14,6 +14,8 @@
         <link rel="stylesheet" media="all" type="text/css" href="{% static "stylesheets/foundation.css" %}" />
         <link rel="stylesheet" media="all" type="text/css" href="{% static "stylesheets/main.min.css" %}" />
         <link rel="Shortcut Icon" href="/favicon.ico" type="image/x-icon" />
+        <meta name="theme-color" content="#E67E22">
+
         {% block og_tags %}{% endblock og_tags %}
         {% block extra_head %}{% endblock %}
     </head>
@@ -47,6 +49,22 @@
                       </a>
                   </li>
                   <li>
+                      <a href="{% url "donate" %}">
+                        <span class="mobile-copy">
+                          <i class="fa fa-credit-card"></i>
+                        </span>
+                        Donate
+                      </a>
+                  </li>
+                  <li>
+                      <a href="{% url "press" %}">
+                        <span class="mobile-copy">
+                          <i class="fa fa-newspaper-o"></i>
+                        </span>
+                        Press
+                      </a>
+                  </li>
+                  <li>
                       <a href="{% url "leaflets" %}">
                         <span class="mobile-copy">
                           <i class="fa fa-line-chart"></i>
@@ -74,15 +92,7 @@
       </header>
 
       <main>
-        <section id="donation_banner">
-          <div class="inner">
-            <p>We need your help to keep this site running over this election and in to the next. <a href="/donate">Please donate today</a></p>
-
-
-
-          </div>
-        </section>
-        </div>
+      </div>
           {% if messages %}
             <div data-alert class="alert-box success" tabindex="0" aria-live="assertive" role="dialogalert">
               {% for message in messages %}
