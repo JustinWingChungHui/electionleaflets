@@ -10,6 +10,7 @@
 @import "fonts";
 @import "normalize/index.scss";
 @import "select_widget";
+@import "analysis_team";
 
 header {
     .top-bar {
@@ -339,6 +340,14 @@ ul.side-nav li > a:after {
     width:2px;
 }
 
+.leaflet_images {
+  figure {
+      > a {
+        display:block;
+      }
+  }
+}
+
 .leaflet_page {
     main {
         &:after {
@@ -353,7 +362,11 @@ ul.side-nav li > a:after {
               }
 
             text-align:justify;
+
             figure {
+                > a {
+                  display:block;
+                }
                 img {
                     width:100%;
                 }

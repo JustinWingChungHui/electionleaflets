@@ -1,23 +1,24 @@
 import os
+import datetime
 import random
 from collections import OrderedDict
+
 from django.shortcuts import redirect
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.contrib import messages
 from django.contrib.formtools.wizard.views import NamedUrlSessionWizardView
 from django.core.urlresolvers import reverse
 from django.conf import settings
-from django.views.generic import (DetailView, ListView, UpdateView, FormView,
+from django.views.generic import (DetailView, ListView, UpdateView,
                                     RedirectView)
-from django.views.generic.detail import BaseDetailView, SingleObjectMixin
+from django.views.generic.detail import SingleObjectMixin
 from django.core.files.storage import FileSystemStorage
 from braces.views import StaffuserRequiredMixin
 
-from core.helpers import geocode
+from analysis.forms import QuestionSetForm
 from people.models import Person
 from .models import Leaflet, LeafletImage
-from .forms import (InsidePageImageForm, LeafletDetailsFrom,
-    LeafletReviewFrom)
+from .forms import (InsidePageImageForm, LeafletDetailsFrom)
 
 
 class ImageView(DetailView):
@@ -75,20 +76,44 @@ class LatestLeaflets(ListView):
     paginate_by = 60
 
 
-class LeafletView(UpdateView):
+
+class LeafletView(DetailView):
     template_name = 'leaflets/leaflet.html'
     model = Leaflet
-    form_class = LeafletReviewFrom
 
-    def get_success_url(self):
-        if 'submit_and_next' in self.request.POST:
-            next_models = Leaflet.objects.filter(reviewed=False)\
-                                .order_by('-date_uploaded')
-            if next_models:
-                return next_models[0].get_absolute_url()
-            else:
-                return '/'
-        return super(LeafletView, self).get_success_url()
+    def get_context_data(self, **kwargs):
+        context = super(LeafletView, self).get_context_data(**kwargs)
+        context['analysis_form'] = QuestionSetForm(
+            self.object,
+            self.request.user
+        )
+        return context
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            return HttpResponseForbidden()
+
+        self.object = self.get_object()
+        form = QuestionSetForm(
+            self.object,
+            self.request.user,
+            request.POST,
+        )
+
+        if form.is_valid():
+            form.save()
+            if 'save_and_next' in request.POST:
+                start_date = datetime.date(2015, 1, 1)
+                next_leaflet = Leaflet.objects.filter(leafletproperties=None)\
+                .filter(date_uploaded__gt=start_date)\
+                .order_by('?')
+                if next_leaflet:
+                    url = next_leaflet[0].get_absolute_url()
+                    return HttpResponseRedirect(url)
+            return HttpResponseRedirect(self.object.get_absolute_url())
+        else:
+            return self.render_to_response(self.get_context_data(form=form))
+
 
 def _skip_step_allowed_condition(wizard, step_name):
     extra_data = wizard.storage.extra_data
@@ -138,8 +163,9 @@ class LeafletUploadWizzard(NamedUrlSessionWizardView):
 
     def get_form_initial(self, step):
         if step == "people":
-            # self.get_cleaned_data_for_step('postcode')['postcode']
             geo_data = self.get_cleaned_data_for_step('postcode')
+            if not geo_data:
+                return {}
             people_qs = Person.objects.filter(
                 personconstituencies__constituency=geo_data['constituency'])
 
@@ -274,6 +300,8 @@ class LeafletUploadWizzard(NamedUrlSessionWizardView):
                     leaflet.election = person.current_election
 
         leaflet.save()
-        messages.success(self.request, random.sample(settings.THANKYOU_MESSAGES, 1)[0])
+        messages.success(
+            self.request,
+            random.sample(settings.THANKYOU_MESSAGES, 1)[0])
 
         return  redirect(reverse('leaflet', kwargs={'pk': leaflet.pk}))

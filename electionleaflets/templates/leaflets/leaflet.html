@@ -40,19 +40,19 @@
 
 {% block content %}
   <div class="row">
-    {% if request.user.is_staff %}
-      <section class="admin_tools columns large-12">
-        <ul>
-            <li><a class='staff_link' href='/admin/leaflets/leaflet/{{ object.id }}/'>Edit leaflet</a></li>
-            <li>
-                <form method="post">{{ form }}
-                    <button type="submit" name="submit">Save</button>
-                    <button type="submit" name="submit_and_next">Save &amp; review next</button>
-                </form>
-            </li>
-        </ul>
-      </section>
-    {% endif %}
+    {# {% if request.user.is_staff %} #}
+    {#   <section class="admin_tools columns large-12"> #}
+    {#     <ul> #}
+    {#         <li><a class='staff_link' href='/admin/leaflets/leaflet/{{ object.id }}/'>Edit leaflet</a></li> #}
+    {#         <li> #}
+    {#             <form method="post">{{ form }} #}
+    {#                 <button type="submit" name="submit">Save</button> #}
+    {#                 <button type="submit" name="submit_and_next">Save &amp; review next</button> #}
+    {#             </form> #}
+    {#         </li> #}
+    {#     </ul> #}
+    {#   </section> #}
+    {# {% endif %} #}
     <article class="columns large-8">
       <h1>
         {% if object.get_title %}
@@ -70,7 +70,7 @@
         <section class="person">
               <p>
                 Sent by
-                <a href="{{ object.publisher_person.source_url }}">
+                <a href="{% url "person" object.publisher_person.remote_id %}">
                   {{object.publisher_person.name}}
                 </a>
               </p>
@@ -95,9 +95,9 @@
       <section class="leaflet_images" aria-describedby=leaflet_description>
         {% for image in object.images.all %}
           <figure>
-            <a href="{% url "full_image"  image.id %}">
+            <a href="{% url "full_image"  image.id %}" class="leaflet_link">
               {% thumbnail image.image "600" crop="center" as im %}
-              <img src="{{ im.url }}" aria-labelledby="page-{{image.id}}">
+              <img src="{{ im.url }}" aria-labelledby="page-{{image.id}}" data-full_image_url="{{ image.image.url }}">
               {% endthumbnail %}
             </a>
             <figcaption>
@@ -145,6 +145,7 @@
     </article>
 
     <aside class="columns large-4">
+      {% include "analysis/includes/analysis_form.html" %}
       <section class="share">
         <h3>Something interesting, dodgy or funny? Shout about it!</h3>
 
@@ -197,5 +198,24 @@
 var point = [{{leaflet.location.1}},{{leaflet.location.0}}];
 var constituency_id = "{{object.constituency.constituency_id}}";
 create_leaflet_map(point, constituency_id);
+
+
+function UseZoom(){
+    return !(
+        (navigator.platform.indexOf("iPhone") != -1) ||
+        (navigator.platform.indexOf("iPod") != -1) ||
+        (navigator.platform.indexOf("iPad") != -1)
+    );
+}
+
+if (UseZoom()) {
+  $.each($('.leaflet_images figure a'), function(i, el) {
+    var full_image = $(el).find('img').data('full_image_url');
+    $(el).zoom({
+      url: full_image
+    });
+  })
+}
+
 </script>
 {% endblock %}

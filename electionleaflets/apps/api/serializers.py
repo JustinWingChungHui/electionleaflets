@@ -46,6 +46,7 @@ class LeafletImageSerializer(serializers.ModelSerializer):
         fields = (
             'image',
             'image_text',
+            'image_type',
         )
     image = serializers.ImageField()
 
@@ -67,8 +68,6 @@ class LeafletSerializer(serializers.HyperlinkedModelSerializer):
             data['status'] = 'draft'
         return data
 
-
-
     class Meta:
         model = Leaflet
         depth = 1
@@ -78,6 +77,32 @@ class LeafletSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'publisher_party',
             'publisher_person',
+            'constituency',
+            'images',
+            'first_page_thumb',
+            'date_uploaded',
+            'date_delivered',
+            'status',
+        )
+
+
+class LeafletMinSerializer(serializers.ModelSerializer):
+    images = LeafletImageSerializer(many=True, required=False)
+    first_page_thumb = serializers.SerializerMethodField()
+
+    def get_first_page_thumb(self, obj):
+        image = obj.get_first_image()
+        if image:
+            return get_thumbnail(obj.get_first_image().image, '350').url
+
+    class Meta:
+        model = Leaflet
+        depth = 0
+        fields = (
+            'pk',
+            'title',
+            'description',
+            'publisher_party',
             'constituency',
             'images',
             'first_page_thumb',
